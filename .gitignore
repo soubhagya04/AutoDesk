@@ -1,0 +1,7 @@
+# Environment variables
+.env
+*.env
+
+# Ignore markdown documentation files except README.md
+*.md
+!README.md
