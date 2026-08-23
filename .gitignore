@@ -2,6 +2,11 @@
 .env
 *.env
 
+# Build Output & IDE
+out/
+target/
+.idea/
+
 # Ignore markdown documentation files except README.md
 *.md
 !README.md
