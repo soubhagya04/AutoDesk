@@ -1,7 +1,6 @@
 package com.autodesk.backend.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,11 +20,9 @@ public class Ticket {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
     @Column(nullable = false)
     private String title;
 
-    @NotBlank
     @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 
@@ -76,15 +73,6 @@ public class Ticket {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-        if (this.status == null) {
-            this.status = TicketStatus.OPEN;
-        }
-        if (this.priority == null) {
-            this.priority = Priority.MEDIUM;
-        }
-        if (this.category == null) {
-            this.category = Category.OTHER;
-        }
     }
 
     @PreUpdate

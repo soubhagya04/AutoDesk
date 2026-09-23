@@ -1,5 +1,6 @@
 package com.autodesk.backend.security;
 
+import com.autodesk.backend.entity.Role;
 import com.autodesk.backend.entity.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
@@ -29,6 +30,8 @@ public class UserDetailsImpl implements UserDetails {
     @JsonIgnore
     private String password;
 
+    private Role role;
+
     private Collection<? extends GrantedAuthority> authorities;
 
     public static UserDetailsImpl build(User user) {
@@ -39,6 +42,7 @@ public class UserDetailsImpl implements UserDetails {
                 user.getName(),
                 user.getEmail(),
                 user.getPassword(),
+                user.getRole(),
                 List.of(authority)
         );
     }

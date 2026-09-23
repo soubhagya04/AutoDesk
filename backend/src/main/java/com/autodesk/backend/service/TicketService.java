@@ -25,6 +25,7 @@ public class TicketService {
     private final TicketRepository ticketRepository;
     private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
+    private final DepartmentService departmentService;
 
     public User getUserFromDetails(UserDetailsImpl userDetails) {
         return userRepository.findById(userDetails.getId())
@@ -59,7 +60,12 @@ public class TicketService {
         if (currentUser.getRole() == Role.ROLE_ADMIN) {
             tickets = ticketRepository.findAllByOrderByCreatedAtDesc();
         } else if (currentUser.getRole() == Role.ROLE_ENGINEER) {
-            tickets = ticketRepository.findByAssignedToOrderByCreatedAtDesc(currentUser);
+            // If the engineer belongs to a department, include unassigned tickets from that queue.
+            if (currentUser.getDepartment() != null) {
+                tickets = ticketRepository.findForEngineer(currentUser, currentUser.getDepartment());
+            } else {
+                tickets = ticketRepository.findByAssignedToOrderByCreatedAtDesc(currentUser);
+            }
         } else {
             tickets = ticketRepository.findByCreatedByOrderByCreatedAtDesc(currentUser);
         }
@@ -85,8 +91,15 @@ public class TicketService {
 
         TicketStatus newStatus = request.getStatus();
 
-        if (currentUser.getRole() == Role.ROLE_ADMIN || currentUser.getRole() == Role.ROLE_ENGINEER) {
+        if (currentUser.getRole() == Role.ROLE_ADMIN) {
             ticket.setStatus(newStatus);
+        } else if (currentUser.getRole() == Role.ROLE_ENGINEER) {
+            // Engineers may only update status of tickets explicitly assigned to them.
+            if (ticket.getAssignedTo() != null && ticket.getAssignedTo().getId().equals(currentUser.getId())) {
+                ticket.setStatus(newStatus);
+            } else {
+                throw new AccessDeniedException("Engineers can only update the status of tickets assigned to them");
+            }
         } else if (currentUser.getRole() == Role.ROLE_EMPLOYEE) {
             if (ticket.getCreatedBy().getId().equals(currentUser.getId())) {
                 if (newStatus == TicketStatus.REOPENED &&
@@ -105,16 +118,18 @@ public class TicketService {
     }
 
     private boolean canAccessTicket(Ticket ticket, User currentUser) {
-        if (currentUser.getRole() == Role.ROLE_ADMIN) {
+        if (currentUser.getRole() == Role.ROLE_ADMIN) return true;
+        if (ticket.getCreatedBy() != null && ticket.getCreatedBy().getId().equals(currentUser.getId())) return true;
+        if (ticket.getAssignedTo() != null && ticket.getAssignedTo().getId().equals(currentUser.getId())) return true;
+        // Engineers can view unassigned tickets belonging to their department queue.
+        if (currentUser.getRole() == Role.ROLE_ENGINEER
+                && currentUser.getDepartment() != null
+                && ticket.getAssignedTo() == null
+                && ticket.getDepartment() != null
+                && ticket.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
             return true;
         }
-        if (ticket.getCreatedBy() != null && ticket.getCreatedBy().getId().equals(currentUser.getId())) {
-            return true;
-        }
-        if (ticket.getAssignedTo() != null && ticket.getAssignedTo().getId().equals(currentUser.getId())) {
-            return true;
-        }
-        return currentUser.getRole() == Role.ROLE_ENGINEER;
+        return false;
     }
 
     public TicketResponse mapToResponse(Ticket ticket) {
@@ -122,7 +137,7 @@ public class TicketService {
 
         UserSummaryDto createdByDto = mapUserToSummary(ticket.getCreatedBy());
         UserSummaryDto assignedToDto = mapUserToSummary(ticket.getAssignedTo());
-        DepartmentResponse departmentDto = mapDepartmentToResponse(ticket.getDepartment());
+        DepartmentResponse departmentDto = departmentService.mapToResponse(ticket.getDepartment());
 
         return TicketResponse.builder()
                 .id(ticket.getId())
@@ -149,17 +164,6 @@ public class TicketService {
                 .name(user.getName())
                 .email(user.getEmail())
                 .role(user.getRole())
-                .build();
-    }
-
-    private DepartmentResponse mapDepartmentToResponse(Department department) {
-        if (department == null) return null;
-        return DepartmentResponse.builder()
-                .id(department.getId())
-                .name(department.getName())
-                .description(department.getDescription())
-                .createdAt(department.getCreatedAt())
-                .updatedAt(department.getUpdatedAt())
                 .build();
     }
 }

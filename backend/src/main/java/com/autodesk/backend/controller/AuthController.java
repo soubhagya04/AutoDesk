@@ -4,7 +4,7 @@ import com.autodesk.backend.dto.request.LoginRequest;
 import com.autodesk.backend.dto.request.RegisterRequest;
 import com.autodesk.backend.dto.response.AuthResponse;
 import com.autodesk.backend.dto.response.MessageResponse;
-import com.autodesk.backend.entity.Role;
+import com.autodesk.backend.dto.response.UserProfileResponse;
 import com.autodesk.backend.security.UserDetailsImpl;
 import com.autodesk.backend.service.AuthService;
 import jakarta.validation.Valid;
@@ -34,16 +34,14 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<AuthResponse> getCurrentUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        Role userRole = Role.valueOf(userDetails.getAuthorities().iterator().next().getAuthority());
-
-        AuthResponse authResponse = AuthResponse.builder()
+    public ResponseEntity<UserProfileResponse> getCurrentUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        UserProfileResponse profile = UserProfileResponse.builder()
                 .id(userDetails.getId())
                 .name(userDetails.getName())
                 .email(userDetails.getEmail())
-                .role(userRole)
+                .role(userDetails.getRole())
                 .build();
 
-        return ResponseEntity.ok(authResponse);
+        return ResponseEntity.ok(profile);
     }
 }

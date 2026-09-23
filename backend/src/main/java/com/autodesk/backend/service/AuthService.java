@@ -33,7 +33,7 @@ public class AuthService {
             throw new IllegalArgumentException("Error: Email is already in use!");
         }
 
-        Role userRole = registerRequest.getRole() != null ? registerRequest.getRole() : Role.ROLE_EMPLOYEE;
+        Role userRole = Role.ROLE_EMPLOYEE;
 
         User user = User.builder()
                 .name(registerRequest.getName())
@@ -55,7 +55,7 @@ public class AuthService {
         String jwt = jwtUtils.generateJwtToken(authentication);
 
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        Role userRole = Role.valueOf(userDetails.getAuthorities().iterator().next().getAuthority());
+        Role userRole = userDetails.getRole();
 
         return AuthResponse.builder()
                 .token(jwt)

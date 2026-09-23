@@ -1,6 +1,5 @@
 package com.autodesk.backend.dto.request;
 
-import com.autodesk.backend.entity.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -24,6 +23,4 @@ public class RegisterRequest {
     @NotBlank(message = "Password is required")
     @Size(min = 6, max = 40, message = "Password must be between 6 and 40 characters")
     private String password;
-
-    private Role role; // Optional, defaults to ROLE_EMPLOYEE if null
 }

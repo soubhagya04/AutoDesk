@@ -1,6 +1,7 @@
 package com.autodesk.backend.exception;
 
 import com.autodesk.backend.dto.response.MessageResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -13,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -48,7 +50,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<MessageResponse> handleGeneralException(Exception ex) {
-        return new ResponseEntity<>(new MessageResponse("An unexpected error occurred: " + ex.getMessage()),
+        log.error("Unexpected error occurred", ex);
+        return new ResponseEntity<>(new MessageResponse("An unexpected error occurred. Please try again later."),
                 HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
