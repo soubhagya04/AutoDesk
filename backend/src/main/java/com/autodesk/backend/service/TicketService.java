@@ -1,5 +1,6 @@
 package com.autodesk.backend.service;
 
+import com.autodesk.backend.dto.request.AssignTicketRequest;
 import com.autodesk.backend.dto.request.StatusUpdateRequest;
 import com.autodesk.backend.dto.request.TicketRequest;
 import com.autodesk.backend.dto.response.DepartmentResponse;
@@ -117,7 +118,35 @@ public class TicketService {
         return mapToResponse(updatedTicket);
     }
 
-    private boolean canAccessTicket(Ticket ticket, User currentUser) {
+    @Transactional
+    public TicketResponse assignTicket(Long id, AssignTicketRequest request) {
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", id));
+
+        User engineer = userRepository.findById(request.getEngineerId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.getEngineerId()));
+
+        if (engineer.getRole() != Role.ROLE_ENGINEER) {
+            throw new IllegalArgumentException("Assigned user must have the ROLE_ENGINEER role");
+        }
+
+        ticket.setAssignedTo(engineer);
+        Ticket updatedTicket = ticketRepository.save(ticket);
+        return mapToResponse(updatedTicket);
+    }
+
+    public Ticket getTicketEntity(Long id, User currentUser) {
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", id));
+
+        if (!canAccessTicket(ticket, currentUser)) {
+            throw new AccessDeniedException("You do not have permission to view this ticket");
+        }
+
+        return ticket;
+    }
+
+    public boolean canAccessTicket(Ticket ticket, User currentUser) {
         if (currentUser.getRole() == Role.ROLE_ADMIN) return true;
         if (ticket.getCreatedBy() != null && ticket.getCreatedBy().getId().equals(currentUser.getId())) return true;
         if (ticket.getAssignedTo() != null && ticket.getAssignedTo().getId().equals(currentUser.getId())) return true;
@@ -157,7 +186,7 @@ public class TicketService {
                 .build();
     }
 
-    private UserSummaryDto mapUserToSummary(User user) {
+    public UserSummaryDto mapUserToSummary(User user) {
         if (user == null) return null;
         return UserSummaryDto.builder()
                 .id(user.getId())
